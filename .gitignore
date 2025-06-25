@@ -1,3 +1,8 @@
+data
+src/fabric_project/__pycache__
+src/fabric_project/results_fabric
+src/fabric_project/startIpfs.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
