@@ -80,13 +80,13 @@ Navigate to your local Fabric test-network (from fabric-samples), bring up the n
 
 Return to the project root when complete.
 
-## Step 2: Deploy Chaincode
-
-In the `fsl-chaincode` directory, run the deployment script to package, install and instantiate the `fsl` smart contract on the channel.
-
-## Step 3: Generate Collections Config for 3 Orgs
+## Step 2: Generate Collections Config for 3 Orgs
 
 Use the Python script in `fsl-chaincode` to generate a Private Data Collections configuration for three organizations (Org1MSP, Org2MSP, Org3MSP), including the Admin MSP in the global policy. Save the output to `chaincode/collections_config.json`. You may need to re-run the deployment script after updating this file.
+
+## Step 3: Deploy Chaincode
+
+In the `fsl-chaincode` directory, run the deployment script to package, install and instantiate the `fsl` smart contract on the channel.
 
 ## Step 4: Start Services
 
