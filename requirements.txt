@@ -1,0 +1,8 @@
+torch
+torchvision
+pandas
+numpy
+websocket-client
+requests
+openpyxl
+httpx

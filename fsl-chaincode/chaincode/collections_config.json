@@ -1,0 +1,47 @@
+[
+  {
+    "name": "clientModelHashCollectionOrg1MSP",
+    "policy": "OR('Org1MSP.member','AdminMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  },
+  {
+    "name": "intermediateDataHashCollectionOrg1MSP",
+    "policy": "OR('Org1MSP.member','AdminMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  },
+  {
+    "name": "clientModelHashCollectionOrg2MSP",
+    "policy": "OR('Org2MSP.member','AdminMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  },
+  {
+    "name": "intermediateDataHashCollectionOrg2MSP",
+    "policy": "OR('Org2MSP.member','AdminMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  },
+  {
+    "name": "globalModelHashCollection",
+    "policy": "OR('Org1MSP.member','Org2MSP.member','AdminMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  }
+]

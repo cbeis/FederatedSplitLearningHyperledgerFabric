@@ -7,18 +7,28 @@ from datetime import datetime
 from pathlib import Path
 import threading
 
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
-from aggregation import perform_aggregation, local_update_barrier
 from client import Client
-from config import BATCH_SIZE, EPOCHS, NUM_CLIENTS
+from config import BATCH_SIZE, EPOCHS, NUM_CLIENTS, global_commit_barrier, local_update_barrier
 from evaluation import evaluate
 from models import ClientModel, ServerModel
 from server import Server
 
-
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        base = {
+            "timestamp": record.created,
+            "level":    record.levelname
+        }
+        if isinstance(record.msg, dict):
+            base.update(record.msg)
+        else:
+            base["message"] = record.getMessage()
+        return json.dumps(base)
 class CsvHandler(logging.Handler):
     def __init__(self, path, fieldnames):
         super().__init__()
@@ -35,6 +45,13 @@ class CsvHandler(logging.Handler):
         except Exception:
             pass
 
+def save_results(epoch, epoch_time, accuracy, filepath):
+    excel_file = Path(filepath)
+    results = pd.DataFrame({'Epoch': [epoch], 'Time (seconds)': [epoch_time], 'Accuracy (%)': [accuracy]})
+    if excel_file.exists():
+        existing_results = pd.read_excel(excel_file)
+        results = pd.concat([existing_results, results], ignore_index=True)
+    results.to_excel(excel_file, index=False)
 
 def setup_environment(num_clients: int, epochs: int, batch_size: int):
     server_url = [f"http://localhost:{port}" for port in range(3000, 3060)]
@@ -92,10 +109,12 @@ def setup_environment(num_clients: int, epochs: int, batch_size: int):
 def main():
     num_clients = NUM_CLIENTS
     epochs = EPOCHS
-    batch_size = BATCH_SIZE
-
+    batch_size=BATCH_SIZE
+    
     script_dir = Path(__file__).resolve().parent
-    run_name = f"EXP3_{num_clients}_{epochs}_{batch_size}"
+
+    run_name = f"{num_clients}_{epochs}_{batch_size}"
+
     timestamp = datetime.now().strftime("%m%d_%H%M%S")
     results_dir = script_dir / f"results_fabric/{run_name}_{timestamp}"
     os.makedirs(results_dir, exist_ok=True)
@@ -104,73 +123,62 @@ def main():
     for h in list(logger.handlers):
         logger.removeHandler(h)
     logger.setLevel(logging.INFO)
-
     fh = logging.FileHandler(f"{results_dir}/metrics.jsonl")
-    fh.setFormatter(logging.Formatter("%(message)s"))
+    fh.setFormatter(JsonFormatter())
     logging.getLogger().addHandler(fh)
-
-    logs_dir = os.path.join(results_dir, "logs")
+    logs_dir = os.path.join( results_dir, "logs")
     os.makedirs(logs_dir, exist_ok=True)
     csv_log_path = os.path.join(logs_dir, f"{run_name}_{timestamp}.csv")
 
     fieldnames = [
-        "timestamp",
-        "level",
-        "event",
-        "epoch",
-        "test_accuracy",
-        "test_loss",
-        "duration_s",
-        "component",
-        "client_id",
-        "batch",
-        "loss",
-        "size_bytes",
+        "timestamp","level","event","epoch","test_accuracy","test_loss","duration_s",
+        "component","client_id","batch","loss","size_bytes"
     ]
     csv_handler = CsvHandler(csv_log_path, fieldnames=fieldnames)
-    csv_handler.setFormatter(logging.Formatter("%(message)s"))
+    csv_handler.setFormatter(JsonFormatter())
     logging.getLogger().addHandler(csv_handler)
 
-    clients, server, test_loader = setup_environment(num_clients, epochs, batch_size)
+    clients, server, test_loader = setup_environment(num_clients, epochs, batch_size)  # Adjust setup_environment to also return a common testloader
 
     server.start()
+    time.sleep(1)
     for client in clients:
         client.start()
-
+    
     for epoch in range(epochs):
         epoch_start_time = time.time()
         current_round_id = epoch + 1
-        print(f"\n===== Orchestrator: Starting Epoch {current_round_id}/{epochs} =====")
+        print(f"\n===== Starting Epoch {current_round_id}/{epochs} =====")
 
-        print("Orchestrator: Waiting for clients to complete local updates...")
+        print("Waiting for clients to complete local updates...")
+        local_update_barrier.wait() 
+        print("Waiting for clients to commit global hash…")
+        global_commit_barrier.wait()
+        print(f"Finalizing global model for round {current_round_id}")
         local_update_barrier.wait()
 
-        perform_aggregation(current_round_id, num_clients)
-
-        time.sleep(0.5)
         if clients:
             accuracy, test_loss = evaluate(clients[0].device, clients[0].model, server.model, server.criterion, test_loader)
             epoch_duration = time.time() - epoch_start_time
-            logging.info(
-                json.dumps(
-                    {
-                        "event": "epoch_end",
-                        "epoch": epoch,
-                        "duration_s": epoch_duration,
-                        "test_accuracy": accuracy,
-                        "test_loss": test_loss,
-                    }
-                )
-            )
-            print(f"Orchestrator: Accuracy after Epoch {current_round_id} aggregation: {accuracy:.2f}%")
+            logging.info({
+            "event":      "epoch_end",
+            "epoch":      epoch,
+            "duration_s": epoch_duration,
+            "test_accuracy": accuracy,
+            "test_loss":     test_loss
+            })
+            print(f"Accuracy after Epoch {current_round_id} aggregation: {accuracy:.2f}%")
+            results_file = os.path.join(results_dir, "results.xlsx")
+            save_results(current_round_id, epoch_duration, accuracy, filepath=results_file)
 
-        print(
-            f"===== Orchestrator: End of Epoch {current_round_id}/{epochs} (Duration: {time.time() - epoch_start_time:.2f}s) ====="
-        )
 
-    for client in clients:
-        client.join()
+        print(f"===== End of Epoch {current_round_id}/{epochs} (Duration: {epoch_duration:.2f}s) =====")
 
+
+    for epoch in range(epochs):
+        for client in clients:
+            client.join()
+    
     server.stop()
     server.join()
 
