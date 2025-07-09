@@ -14,37 +14,46 @@ The system consists of four main components:
 
 ### Project Overview
 
-.
-├── .gitignore
-├── LICENSE
-├── README.md
-├── requirements.txt
-├── api-ts/
-│   ├── src/
-│   │   ├── client.ts
-│   │   ├── gateway.ts
-│   │   └── server.ts
-│   ├── package.json
-│   ├── startserver.sh
-│   └── tsconfig.json
-├── fsl-chaincode/
-│   ├── chaincode/
-│   │   ├── collections_config.json
-│   │   └── fsl_chaincode.go
-│   ├── deployFSL.sh
-│   └── generate_collections_config.py
-└── src/fabric_project/
-    ├── __pycache__/
-    ├── results_fabric/
-    ├── client.py
-    ├── config.py
-    ├── evaluation.py
-    ├── ipfs_interface.py
-    ├── main.py
-    ├── models.py
-    ├── server.py
-    ├── startIpfs.sh
-    └── storage.py
+This project implements Federated Split Learning on Hyperledger Fabric. Key components:
+
+- **`.gitignore`**  
+  Excludes build artifacts, credentials, and other ephemeral files.
+
+- **`LICENSE`**  
+  Project licensing terms.
+
+- **`README.md`**  
+  This overview and usage instructions.
+
+- **`requirements.txt`**  
+  Python dependencies for the Fabric-client and IPFS integration.
+
+- **`api-ts/`**  
+  TypeScript-based REST/WebSocket API bridge between the Python client and Fabric network.  
+  - `src/client.ts` Fabric Gateway client  
+  - `src/gateway.ts` Gateway helper  
+  - `src/server.ts` Express/WebSocket server  
+  - `package.json`, `tsconfig.json` TypeScript project config  
+  - `startserver.sh` Build & launch script
+
+- **`fsl-chaincode/`**  
+  Chaincode definition and deployment artifacts.  
+  - `chaincode/fsl_chaincode.go` Go smart contract implementing FSL logic  
+  - `chaincode/collections_config.json` PDC policy file  
+  - `deployFSL.sh` Installs and instantiates chaincode  
+  - `generate_collections_config.py` Generates `collections_config.json` for arbitrary MSP lists
+
+- **`src/fabric_project/`**  
+  Python-based orchestrator and experiment runner.  
+  - `client.py`, `server.py` Client/server roles for split learning  
+  - `main.py` Entry point to launch experiments  
+  - `models.py`, `evaluation.py` ML model definitions and metrics  
+  - `ipfs_interface.py`, `storage.py` IPFS integration and results persistence  
+  - `config.py` Experiment parameters (clients, epochs, network addresses)  
+  - `startIpfs.sh` Local IPFS daemon launcher  
+  - `results_fabric/` Output directory for experiment data
+
+Use this overview to navigate the codebase and locate components for network setup, chaincode deployment, API services, or experiment execution.```
 
 ## Prerequisites
 
